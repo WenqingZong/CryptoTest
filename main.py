@@ -1,7 +1,11 @@
 import colorlog
 from concurrent.futures import ThreadPoolExecutor
 from crab_dbg import dbg
+from queue import Queue
 import requests
+import threading
+from threading import Event
+import time
 from typing import Dict
 import yaml
 
@@ -37,6 +41,10 @@ formatter = colorlog.ColoredFormatter(
 handler.setFormatter(formatter)
 LOGGER.addHandler(handler)
 CONFIG = load_config()
+price_queue = Queue()
+trade_queue = Queue()
+log_queue = Queue()
+shutdown_event = Event()
 
 
 def get_jupiter_price() -> Dict[str, float] | None:
@@ -60,7 +68,6 @@ def get_jupiter_price() -> Dict[str, float] | None:
         data = response.json()
         sol_mint = params["ids"]
         sol_data = data["data"][sol_mint]
-        dbg(sol_data["extraInfo"])
         quoted = sol_data["extraInfo"]["quotedPrice"]
 
         return {"buy": float(quoted["buyPrice"]), "sell": float(quoted["sellPrice"])}
@@ -97,15 +104,59 @@ def get_bybit_price() -> Dict[str, float] | None:
         return None
 
 
+def fetch_price() -> None:
+    """
+    Monitor jupiter and bybit, once we get the latest price, send it to price_queue.
+    :return: None
+    """
+    while not shutdown_event.is_set():
+        # We need to get prices from DEX and CEX simultaneously as prices may change fast.
+        with ThreadPoolExecutor() as executor:
+            jupiter_future = executor.submit(get_jupiter_price)
+            bybit_future = executor.submit(get_bybit_price)
+            jupiter_price = jupiter_future.result()
+            bybit_price = bybit_future.result()
+
+        LOGGER.info("jupiter: %s" % jupiter_price)
+        LOGGER.info("bybit: %s" % bybit_price)
+
+        price_queue.put(
+            {
+                "jupiter": jupiter_price,
+                "bybit": bybit_price,
+            }
+        )
+
+
+def price_analysis() -> None:
+    """
+    Analysis the received price, decide if we can make profit.
+    If cannot, then do nothing; if we can, then put the trading info into trade queue.
+    :return:
+    """
+    while not shutdown_event.is_set():
+        price = price_queue.get(block=True)
+        LOGGER.error(price)
+
+
 def main():
-    # We need to get prices from DEX and CEX simultaneously as prices may change fast.
-    with ThreadPoolExecutor() as executor:
-        jupiter_future = executor.submit(get_jupiter_price)
-        bybit_future = executor.submit(get_bybit_price)
-        jupiter_price = jupiter_future.result()
-        bybit_price = bybit_future.result()
-    LOGGER.info(jupiter_price)
-    LOGGER.info(bybit_price)
+    global shutdown_event
+
+    components = [
+        threading.Thread(target=fetch_price, daemon=True),
+        threading.Thread(target=price_analysis, daemon=True),
+    ]
+    try:
+        for component in components:
+            component.start()
+
+        while not shutdown_event.is_set():
+            time.sleep(1)
+    except KeyboardInterrupt:
+        shutdown_event.set()
+        for component in components:
+            component.join(timeout=5)
+        LOGGER.warning("Program shut down due to keyboard interruption")
 
 
 if __name__ == "__main__":
