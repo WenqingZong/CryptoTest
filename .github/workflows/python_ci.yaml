@@ -35,7 +35,8 @@ jobs:
       - name: Code Lint Check
         run: ruff check
 
-      - name: Run Pytest
-        run: |
-          source .venv/bin/activate
-          pytest
+# Currently no test, uncomment these once tests are added
+#      - name: Run Pytest
+#        run: |
+#          source .venv/bin/activate
+#          pytest
