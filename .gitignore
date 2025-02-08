@@ -1,0 +1,6 @@
+# IDEs
+.idea/
+.vscode/
+
+# Config files that contains sensitive information, e.g., API keys
+config.yaml
