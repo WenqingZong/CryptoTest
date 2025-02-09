@@ -1,12 +1,14 @@
 import colorlog
 from concurrent.futures import ThreadPoolExecutor
-from crab_dbg import dbg
+
+# from crab_dbg import dbg
+from dataclasses import dataclass
+from enum import Enum
 from queue import Queue
 import requests
 import threading
 from threading import Event
 import time
-from typing import Dict
 import yaml
 
 
@@ -47,11 +49,101 @@ log_queue = Queue()
 shutdown_event = Event()
 
 
-def get_jupiter_price() -> Dict[str, float] | None:
+@dataclass
+class MarketPrice:
+    """
+    Ask and bid price get from DEX/CEX API
+    """
+
+    def __init__(self, buy: float, sell: float):
+        self._buy = buy
+        self._sell = sell
+
+    # 大坑，交易所的卖是我的买，交易所的买是我的卖！！！！
+    def user_buy(self) -> float:
+        return self._sell
+
+    def user_sell(self) -> float:
+        return self._buy
+
+    def __str__(self):
+        return "Bid: %f, Ask: %f" % (self._buy, self._sell)
+
+
+@dataclass
+class ArbitrageOpportunity:
+    """
+    A pair of DEX and CEX prices. We may find arbitrage opportunity from here.
+    """
+
+    def __init__(self, jupiter: MarketPrice, bybit: MarketPrice, coin_name: str):
+        self._jupiter = jupiter
+        self._bybit = bybit
+        self._coin_name = coin_name
+
+    def get_jupiter(self) -> MarketPrice:
+        return self._jupiter
+
+    def get_bybit(self) -> MarketPrice:
+        return self._bybit
+
+    def get_coin_name(self) -> str:
+        return self._coin_name
+
+
+class TradeType(Enum):
+    # We, the user, buy from jupiter and sell at bybit
+    JUPITER_TO_BYBIT = 1
+
+    # We, the user, buy from bybit and sell at jupiter
+    BYBIT_TO_JUPITER = 2
+
+
+class TradeResult(Enum):
+    NotProcessed = 1
+    Finished = 2
+    Failed = 3
+
+
+@dataclass
+class Trade:
+    """
+    Once we believe we can gain profit, issue a Trade object and store its result.
+    """
+
+    def __init__(
+        self,
+        trade_type: TradeType,
+        arbitrage_opportunity: ArbitrageOpportunity,
+        timestamp,
+        expected_profit: float,
+    ):
+        self._trade_type = trade_type
+        self._arbitrage_opportunity = arbitrage_opportunity
+        self._timestamp = timestamp
+        self._expected_profit = expected_profit
+
+        self._trade_result = TradeResult.NotProcessed
+        self._actual_profit = 0.0
+
+    def get_trade_type(self) -> TradeType:
+        return self._trade_type
+
+    def get_arbitrage_opportunity(self) -> ArbitrageOpportunity:
+        return self._arbitrage_opportunity
+
+    def set_trade_result(self, trade_result: TradeResult) -> None:
+        self._trade_result = trade_result
+
+    def set_actual_profit(self, actual_profit) -> None:
+        self._actual_profit = actual_profit
+
+
+def get_jupiter_price() -> MarketPrice | None:
     """
     Retrieve the DEX price from the Jupiter API for SOL to USDC conversion.
     Returns:
-        A dict contains the buy and sell price in USDC per SOL or None on failure.
+        A MarketPrice object contains the buy and sell price in USDC per SOL or None on failure.
     """
     url = "https://api.jup.ag/price/v2"
 
@@ -70,17 +162,17 @@ def get_jupiter_price() -> Dict[str, float] | None:
         sol_data = data["data"][sol_mint]
         quoted = sol_data["extraInfo"]["quotedPrice"]
 
-        return {"buy": float(quoted["buyPrice"]), "sell": float(quoted["sellPrice"])}
+        return MarketPrice(float(quoted["buyPrice"]), float(quoted["sellPrice"]))
     except (requests.exceptions.RequestException, KeyError, ValueError) as e:
         LOGGER.error(e)
         return None
 
 
-def get_bybit_price() -> Dict[str, float] | None:
+def get_bybit_price() -> MarketPrice | None:
     """
     Retrieve the CEX price from the ByBit API for SOL to USDC conversion.
     Returns:
-        A dict contains the buy and sell price in USDC per SOL or None on failure.
+        A MarketPrice object contains the buy and sell price in USDC per SOL or None on failure.
     """
     url = "https://api.bybit.com/v5/market/tickers"
     params = {"category": "spot", "symbol": "SOLUSDC"}
@@ -92,7 +184,7 @@ def get_bybit_price() -> Dict[str, float] | None:
         data = response.json()
         ticker = data["result"]["list"][0]  # Access first item in ticker list
 
-        return {"buy": float(ticker["bid1Price"]), "sell": float(ticker["ask1Price"])}
+        return MarketPrice(float(ticker["bid1Price"]), float(ticker["ask1Price"]))
 
     except (
         requests.exceptions.RequestException,
@@ -120,12 +212,7 @@ def fetch_price() -> None:
         LOGGER.info("jupiter: %s" % jupiter_price)
         LOGGER.info("bybit: %s" % bybit_price)
 
-        price_queue.put(
-            {
-                "jupiter": jupiter_price,
-                "bybit": bybit_price,
-            }
-        )
+        price_queue.put(ArbitrageOpportunity(jupiter_price, bybit_price, "SOL"))
 
 
 def price_analysis() -> None:
@@ -134,9 +221,13 @@ def price_analysis() -> None:
     If cannot, then do nothing; if we can, then put the trading info into trade queue.
     :return:
     """
+    SERVICE_CHARGE_PERCENTAGE = CONFIG["SERVICE_CHARGE_PERCENTAGE"]
     while not shutdown_event.is_set():
-        price = price_queue.get(block=True)
-        LOGGER.error(price)
+        price: ArbitrageOpportunity = price_queue.get(block=True)
+        jupiter_user_buy = price.get_jupiter().user_buy()
+        jupiter_user_sell = price.get_jupiter().user_sell()
+        bybit_user_buy = price.get_bybit().user_buy()
+        bybit_user_sell = price.get_bybit().user_sell()
 
 
 def main():
