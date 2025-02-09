@@ -1,7 +1,7 @@
 import colorlog
 from concurrent.futures import ThreadPoolExecutor
 
-from crab_dbg import dbg
+# from crab_dbg import dbg
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -331,6 +331,7 @@ def main():
     components = [
         threading.Thread(target=fetch_price, daemon=True),
         threading.Thread(target=price_analysis, daemon=True),
+        threading.Thread(target=actual_trade, daemon=True),
     ]
     try:
         for component in components:
