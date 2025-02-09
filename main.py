@@ -1,9 +1,11 @@
 import colorlog
 from concurrent.futures import ThreadPoolExecutor
 
-# from crab_dbg import dbg
+from crab_dbg import dbg
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+import logging
 from queue import Queue
 import requests
 import threading
@@ -23,6 +25,9 @@ def load_config(config_file="config.yaml"):
 
 # Global variables
 # LOGGER setup
+# Disable log lines from urllib3 that below warning level
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
 LOGGER = colorlog.getLogger()
 LOGGER.setLevel(colorlog.DEBUG)
 handler = colorlog.StreamHandler()
@@ -42,6 +47,7 @@ formatter = colorlog.ColoredFormatter(
 )
 handler.setFormatter(formatter)
 LOGGER.addHandler(handler)
+
 CONFIG = load_config()
 price_queue = Queue()
 trade_queue = Queue()
@@ -58,6 +64,7 @@ class MarketPrice:
     def __init__(self, buy: float, sell: float):
         self._buy = buy
         self._sell = sell
+        self._timestamp = datetime.now()
 
     # 大坑，交易所的卖是我的买，交易所的买是我的卖！！！！
     def user_buy(self) -> float:
@@ -67,7 +74,11 @@ class MarketPrice:
         return self._buy
 
     def __str__(self):
-        return "Bid: %f, Ask: %f" % (self._buy, self._sell)
+        return "Bid (User Sell): %f, Ask (User Buy): %f at timestamp %s" % (
+            self._buy,
+            self._sell,
+            self._timestamp,
+        )
 
 
 @dataclass
@@ -89,6 +100,13 @@ class ArbitrageOpportunity:
 
     def get_coin_name(self) -> str:
         return self._coin_name
+
+    def __str__(self):
+        return "%s Jupiter: %s, Bybit: %s" % (
+            self._coin_name,
+            self._jupiter,
+            self._bybit,
+        )
 
 
 class TradeType(Enum):
@@ -113,14 +131,14 @@ class Trade:
 
     def __init__(
         self,
+        amount: float,
         trade_type: TradeType,
         arbitrage_opportunity: ArbitrageOpportunity,
-        timestamp,
         expected_profit: float,
     ):
+        self._amount = amount
         self._trade_type = trade_type
         self._arbitrage_opportunity = arbitrage_opportunity
-        self._timestamp = timestamp
         self._expected_profit = expected_profit
 
         self._trade_result = TradeResult.NotProcessed
@@ -137,6 +155,36 @@ class Trade:
 
     def set_actual_profit(self, actual_profit) -> None:
         self._actual_profit = actual_profit
+
+    def __str__(self):
+        coin_name = self._arbitrage_opportunity.get_coin_name()
+
+        if self._trade_type == TradeType.JUPITER_TO_BYBIT:
+            user_buy_price = self._arbitrage_opportunity.get_jupiter().user_buy()
+            user_sell_price = self._arbitrage_opportunity.get_bybit().user_sell()
+            return (
+                "Buy %f %s from Jupiter with price %f, sell at Bybit with price %f, expected profit %f USDC"
+                % (
+                    self._amount,
+                    coin_name,
+                    user_buy_price,
+                    user_sell_price,
+                    self._expected_profit,
+                )
+            )
+        else:
+            user_buy_price = self._arbitrage_opportunity.get_bybit().user_buy()
+            user_sell_price = self._arbitrage_opportunity.get_jupiter().user_sell()
+            return (
+                "Buy %f %s from Bybit with price %f, sell at Jupiter with price %f, expected profit %f USDC"
+                % (
+                    self._amount,
+                    coin_name,
+                    user_buy_price,
+                    user_sell_price,
+                    self._expected_profit,
+                )
+            )
 
 
 def get_jupiter_price() -> MarketPrice | None:
@@ -209,8 +257,8 @@ def fetch_price() -> None:
             jupiter_price = jupiter_future.result()
             bybit_price = bybit_future.result()
 
-        LOGGER.info("jupiter: %s" % jupiter_price)
-        LOGGER.info("bybit: %s" % bybit_price)
+        # LOGGER.info("jupiter: %s" % jupiter_price)
+        # LOGGER.info("bybit: %s" % bybit_price)
 
         price_queue.put(ArbitrageOpportunity(jupiter_price, bybit_price, "SOL"))
 
@@ -222,17 +270,64 @@ def price_analysis() -> None:
     :return:
     """
     SERVICE_CHARGE_PERCENTAGE = CONFIG["SERVICE_CHARGE_PERCENTAGE"]
+    ARBITRAGE_PERCENTAGE_THRESHOLD = CONFIG["ARBITRAGE_PERCENTAGE_THRESHOLD"]
+    TRADE_AMOUNT = CONFIG["TRADE_AMOUNT"]
+
     while not shutdown_event.is_set():
         price: ArbitrageOpportunity = price_queue.get(block=True)
+        LOGGER.debug("Analysing %s" % price)
         jupiter_user_buy = price.get_jupiter().user_buy()
         jupiter_user_sell = price.get_jupiter().user_sell()
         bybit_user_buy = price.get_bybit().user_buy()
         bybit_user_sell = price.get_bybit().user_sell()
 
+        # Trade type 1: Jupiter to Bybit
+        cost_type1 = jupiter_user_buy * (1 + SERVICE_CHARGE_PERCENTAGE)
+        revenue_type1 = bybit_user_sell * (1 - SERVICE_CHARGE_PERCENTAGE)
+        profit_type1 = revenue_type1 - cost_type1
+        profit_percent_type1 = (profit_type1 / cost_type1) * 100
+
+        # Trade type 2: Bybit to Jupiter
+        cost_type2 = bybit_user_buy * (1 + SERVICE_CHARGE_PERCENTAGE)
+        revenue_type2 = jupiter_user_sell * (1 - SERVICE_CHARGE_PERCENTAGE)
+        profit_type2 = revenue_type2 - cost_type2
+        profit_percent_type2 = (profit_type2 / cost_type2) * 100
+
+        trade = None
+        if profit_percent_type1 >= ARBITRAGE_PERCENTAGE_THRESHOLD:
+            trade = Trade(
+                TRADE_AMOUNT,
+                TradeType.JUPITER_TO_BYBIT,
+                price,
+                TRADE_AMOUNT * profit_type1,
+            )
+        elif profit_percent_type2 >= ARBITRAGE_PERCENTAGE_THRESHOLD:
+            trade = Trade(
+                TRADE_AMOUNT,
+                TradeType.BYBIT_TO_JUPITER,
+                price,
+                TRADE_AMOUNT * profit_type2,
+            )
+
+        if trade is not None:
+            trade_queue.put(trade)
+            LOGGER.info("Find a potential arbitrage trade: %s" % trade)
+
+
+def actual_trade() -> None:
+    """
+    Perform the actual trade operation via Jupiter and Bybit API.
+    :return: None
+    """
+    while not shutdown_event.is_set():
+        trade: Trade = trade_queue.get(block=True)
+        LOGGER.info("Handling arbitrage %s" % trade)
+
 
 def main():
     global shutdown_event
 
+    LOGGER.info("Running arbitrage bot")
     components = [
         threading.Thread(target=fetch_price, daemon=True),
         threading.Thread(target=price_analysis, daemon=True),
