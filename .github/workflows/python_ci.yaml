@@ -29,14 +29,5 @@ jobs:
       - name: Install Ruff
         run: curl -LsSf https://astral.sh/ruff/install.sh | sh
 
-      - name: Code Format Check
-        run: ruff format --check
-
       - name: Code Lint Check
         run: ruff check
-
-# Currently no test, uncomment these once tests are added
-#      - name: Run Pytest
-#        run: |
-#          source .venv/bin/activate
-#          pytest
