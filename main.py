@@ -1,6 +1,7 @@
 import aiohttp
 from aiohttp import ClientTimeout
 import asyncio
+import base58
 import base64
 import colorlog
 
@@ -12,7 +13,10 @@ import hmac
 import hashlib
 import json
 import signal
-from solana.rpc.async_api import AsyncClient
+
+# from solana.rpc.async_api import AsyncClient
+# from solders.hash import Hash
+from solders.message import to_bytes_versioned
 from solders.transaction import VersionedTransaction
 from solders.keypair import Keypair
 import time
@@ -367,63 +371,77 @@ async def report_trade_to_telegram(trade: Trade) -> None:
     pass
 
 
-async def sign_and_send_transaction(swap_tx_base64: str, keypair: Keypair):
+async def sign_and_send_transaction(
+    swap_tx_base64: str, session: aiohttp.ClientSession
+) -> None:
     """
-    Given a base64-encoded (unsigned) swap transaction from Jupiter,
-    this function:
-      1. Decodes and deserializes the transaction (assuming it's a VersionedTransaction),
-      2. Signs it with the provided keypair,
-      3. Sends it to the network, and
-      4. Waits for confirmation.
+    Broadcast the desired transaction on Solana chain.
+    :param swap_tx_base64: swapTransaction attribute get from swap API response
+    :return: None
+    """
+    BITGET_WALLET_PRIVATE_KEY = CONFIG["BITGET_WALLET_PRIVATE_KEY"]
 
-    Returns the transaction signature.
-    """
-    # # Create a Solana RPC client
-    # client = AsyncClient("https://api.devnet.solana.com")
+    # 这个写法不对，recent_blockhash不知道需要从哪里那获得。
+    # # Extract and decode the transaction
+    # transaction_bytes = base64.b64decode(swap_tx_base64)
+    # transaction = Transaction.from_bytes(transaction_bytes)
     #
-    # # Decode the base64 transaction into bytes
-    # tx_bytes = base64.b64decode(swap_tx_base64)
+    # # Load the wallet's private key
+    # private_key_bytes = base58.b58decode(BITGET_WALLET_PRIVATE_KEY)
+    # keypair = Keypair.from_bytes(private_key_bytes)
     #
-    # # Deserialize into a VersionedTransaction (Jupiter returns versioned transactions)
-    # try:
-    #     tx = VersionedTransaction.from_bytes(tx_bytes)
-    # except Exception as e:
-    #     raise Exception(f"Failed to deserialize the transaction: {e}")
+    # # Sign the transaction with the user's keypair
+    # transaction.sign([keypair], recent_blockhash=Hash.default())
     #
-    # # Sign the transaction using your keypair
-    # tx.sign([keypair])
+    # # Serialize the signed transaction
+    # signed_txn_bytes = bytes(transaction)
     #
-    # # Serialize the signed transaction back into bytes
-    # signed_tx_bytes = tx.serialize()
+    # # Send the transaction to Solana
+    # async with AsyncClient("https://api.mainnet-beta.solana.com") as client:
+    #     # Send the raw transaction
+    #     send_response = await client.send_raw_transaction(signed_txn_bytes)
+    #     if send_response.is_error():
+    #         error_msg = send_response.error
+    #         raise Exception(f"Failed to send transaction: {error_msg}")
     #
-    # # Send the raw signed transaction (skip preflight if desired)
-    # send_response = client.send_raw_transaction(signed_tx_bytes, skip_preflight=True)
+    #     txid = send_response.value
+    #     print(f"Transaction sent with ID: {txid}")
     #
-    # if not send_response.get("result"):
-    #     raise Exception(f"Failed to send transaction: {send_response}")
-    #
-    # signature = send_response["result"]
-    # print("Transaction signature:", signature)
-    #
-    # # Wait for confirmation (polling)
-    # timeout_sec = 30
-    # start_time = time.time()
-    # confirmed = False
-    # while time.time() - start_time < timeout_sec:
-    #     confirmation = client.get_signature_statuses([signature])
-    #     status = confirmation.get("result", {}).get("value", [None])[0]
-    #     if status is not None and status.get("confirmationStatus") in ("confirmed", "finalized"):
-    #         confirmed = True
-    #         break
-    #     await asyncio.sleep(1)  # Wait a second before polling again
-    #
-    # if confirmed:
-    #     print("Transaction confirmed!")
-    # else:
-    #     raise Exception("Transaction confirmation timed out.")
-    #
-    # return signature
-    pass
+    #     # Wait for confirmation
+    #     await client.confirm_transaction(txid, sleep_seconds=30)
+    #     print("Transaction confirmed")
+
+    # Get our wallet keypair from the config (private key should be base58-encoded)\
+    keypair = Keypair.from_base58_string(BITGET_WALLET_PRIVATE_KEY.strip())
+    if not swap_tx_base64:
+        raise ValueError("No 'swap_transaction' field found in swap response")
+
+    # Convert base64 string into bytes and create a VersionedTransaction
+    raw_tx = VersionedTransaction.from_bytes(base64.b64decode(swap_tx_base64))
+    # Sign the transaction:
+    # solders provides a helper to convert the message to bytes in its versioned format.
+    signature = keypair.sign_message(to_bytes_versioned(raw_tx.message))
+
+    # Create a signed transaction by populating the raw message with our signature
+    signed_tx = VersionedTransaction.populate(raw_tx.message, [signature])
+    # Serialize the signed transaction to bytes and then encode in base64 (RPC expects a base64 string)
+    encoded_tx = base64.b64encode(bytes(signed_tx)).decode("utf-8")
+
+    # Prepare a JSON-RPC payload to send the transaction
+    solana_rpc_url = "https://api.mainnet-beta.solana.com"
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "sendTransaction",
+        "params": [
+            encoded_tx,
+        ],
+    }
+    # Use aiohttp to send the transaction
+    async with session.post(solana_rpc_url, json=payload) as resp:
+        if resp.status != 200:
+            raise Exception(f"Solana RPC returned status code {resp.status}")
+        result = await resp.json()
 
 
 # Helper function to generate the signature for Bybit v5 API requests.
@@ -481,7 +499,6 @@ async def handle_jupiter_to_bybit_trade(
                     "Jupiter quote request failed with status %d" % resp.status
                 )
             quote_data = await resp.json()
-            dbg(quote_data)
 
         # Request a swap from Jupiter.
         swap_payload = {
@@ -497,7 +514,8 @@ async def handle_jupiter_to_bybit_trade(
                     "Jupiter swap request failed with status %d" % swap_resp.status
                 )
             swap_result = await swap_resp.json()
-            dbg(swap_result)
+        # Broadcast this transaction on solana chain
+        await sign_and_send_transaction(swap_result["swapTransaction"], session)
 
         # Now, place a sell order on Bybit.
         order_payload = {
@@ -505,7 +523,7 @@ async def handle_jupiter_to_bybit_trade(
             "symbol": COIN1_NAME + COIN2_NAME,
             "side": "Sell",
             "orderType": "Limit",
-            "qty": str(amount * 10**COIN2_DECIMAL),
+            "qty": str(amount),
             "price": str(arbitrage_opportunity.get_bybit().user_sell()),
         }
         body = json.dumps(order_payload)
@@ -529,7 +547,13 @@ async def handle_jupiter_to_bybit_trade(
             "https://api.bybit.com/v5/order/create", data=body, headers=headers
         ) as response:
             resp_json = await response.json()
-            dbg(resp_json)
+            if resp_json.get("retCode") == 170131 or resp_json.get("retCode") == 170140:
+                # 170131: Insufficient balance, 170140: Order value exceeded lower limit.
+                # We'll ignore it and treat it as success, so the bot is like a simulation.
+                trade.set_trade_result(TradeResult.Finished)
+                await report_trade_to_telegram(trade)
+                await record_trade_in_json(trade)
+                return
             if resp_json.get("retCode") != 0:
                 raise Exception(
                     "Bybit API request failed with return code %d"
