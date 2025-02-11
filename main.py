@@ -1,14 +1,21 @@
 import aiohttp
 from aiohttp import ClientTimeout
 import asyncio
+import base64
 import colorlog
 
-# from crab_dbg import dbg
+from crab_dbg import dbg
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-
+import hmac
+import hashlib
+import json
 import signal
+from solana.rpc.async_api import AsyncClient
+from solders.transaction import VersionedTransaction
+from solders.keypair import Keypair
+import time
 from typing import Coroutine, List
 from threading import Event
 import yaml
@@ -26,7 +33,7 @@ def load_config(config_file="config.yaml"):
 # Global variables
 # LOGGER setup
 LOGGER = colorlog.getLogger()
-LOGGER.setLevel(colorlog.DEBUG)
+LOGGER.setLevel(colorlog.INFO)
 handler = colorlog.StreamHandler()
 formatter = colorlog.ColoredFormatter(
     "%(log_color)s%(asctime)s - %(levelname)s - %(message)s",
@@ -146,6 +153,12 @@ class Trade:
 
     def get_arbitrage_opportunity(self) -> ArbitrageOpportunity:
         return self._arbitrage_opportunity
+
+    def get_trade_result(self):
+        return self._trade_result
+
+    def get_trade_amount(self):
+        return self._amount
 
     def set_trade_result(self, trade_result: TradeResult) -> None:
         self._trade_result = trade_result
@@ -330,7 +343,221 @@ async def price_analysis() -> None:
             LOGGER.exception(e)
 
 
-async def actual_trade() -> None:
+async def record_trade_in_json(trade: Trade) -> None:
+    """
+    Record the given trade activity in json format.
+    :param trade: The processed trade object.
+    :return: None
+    """
+    assert (
+        trade.get_trade_result() != TradeResult.NotProcessed
+    ), "Unprocessed trade object shouldn't be added to json record"
+    pass
+
+
+async def report_trade_to_telegram(trade: Trade) -> None:
+    """
+    Report the given trade activity to telegram.
+    :param trade: The processed trade object
+    :return:
+    """
+    assert (
+        trade.get_trade_result() != TradeResult.NotProcessed
+    ), "Unprocessed trade object shouldn't be reported to telegram"
+    pass
+
+
+async def sign_and_send_transaction(swap_tx_base64: str, keypair: Keypair):
+    """
+    Given a base64-encoded (unsigned) swap transaction from Jupiter,
+    this function:
+      1. Decodes and deserializes the transaction (assuming it's a VersionedTransaction),
+      2. Signs it with the provided keypair,
+      3. Sends it to the network, and
+      4. Waits for confirmation.
+
+    Returns the transaction signature.
+    """
+    # # Create a Solana RPC client
+    # client = AsyncClient("https://api.devnet.solana.com")
+    #
+    # # Decode the base64 transaction into bytes
+    # tx_bytes = base64.b64decode(swap_tx_base64)
+    #
+    # # Deserialize into a VersionedTransaction (Jupiter returns versioned transactions)
+    # try:
+    #     tx = VersionedTransaction.from_bytes(tx_bytes)
+    # except Exception as e:
+    #     raise Exception(f"Failed to deserialize the transaction: {e}")
+    #
+    # # Sign the transaction using your keypair
+    # tx.sign([keypair])
+    #
+    # # Serialize the signed transaction back into bytes
+    # signed_tx_bytes = tx.serialize()
+    #
+    # # Send the raw signed transaction (skip preflight if desired)
+    # send_response = client.send_raw_transaction(signed_tx_bytes, skip_preflight=True)
+    #
+    # if not send_response.get("result"):
+    #     raise Exception(f"Failed to send transaction: {send_response}")
+    #
+    # signature = send_response["result"]
+    # print("Transaction signature:", signature)
+    #
+    # # Wait for confirmation (polling)
+    # timeout_sec = 30
+    # start_time = time.time()
+    # confirmed = False
+    # while time.time() - start_time < timeout_sec:
+    #     confirmation = client.get_signature_statuses([signature])
+    #     status = confirmation.get("result", {}).get("value", [None])[0]
+    #     if status is not None and status.get("confirmationStatus") in ("confirmed", "finalized"):
+    #         confirmed = True
+    #         break
+    #     await asyncio.sleep(1)  # Wait a second before polling again
+    #
+    # if confirmed:
+    #     print("Transaction confirmed!")
+    # else:
+    #     raise Exception("Transaction confirmation timed out.")
+    #
+    # return signature
+    pass
+
+
+# Helper function to generate the signature for Bybit v5 API requests.
+def generate_signature(
+    api_key: str, api_secret: str, timestamp: str, recv_window: str, body: str
+) -> str:
+    # The signature is computed as: HMAC_SHA256(secret, f"{timestamp}{api_key}{recv_window}{body}")
+    message = f"{timestamp}{api_key}{recv_window}{body}"
+    signature = hmac.new(
+        api_secret.encode("utf-8"), message.encode("utf-8"), hashlib.sha256
+    ).hexdigest()
+    return signature
+
+
+async def handle_jupiter_to_bybit_trade(
+    trade: Trade, session: aiohttp.ClientSession
+) -> None:
+    """
+    Do the actual trade, we buy from jupiter and sell at bybit.
+    :param trade: The desired trade object, we'll also update trade result in this object.
+    :return: None
+    """
+    BITGET_WALLET_ADDRESS = CONFIG["BITGET_WALLET_ADDRESS"]
+
+    COIN1_MINT = CONFIG["COIN1_MINT"]
+    COIN1_NAME = CONFIG["COIN1_NAME"]
+    COIN1_DECIMAL = CONFIG["COIN1_DECIMAL"]
+
+    COIN2_MINT = CONFIG["COIN2_MINT"]
+    COIN2_NAME = CONFIG["COIN2_NAME"]
+    COIN2_DECIMAL = CONFIG["COIN2_DECIMAL"]
+
+    BYBIT_API_KEY = CONFIG["BYBIT_API_KEY"]
+    BYBIT_API_SECRET = CONFIG["BYBIT_API_SECRET"]
+
+    try:
+        amount = trade.get_trade_amount()
+        arbitrage_opportunity = trade.get_arbitrage_opportunity()
+        amount_int = int(amount * 10**COIN1_DECIMAL)
+        quote_params = {
+            "inputMint": COIN1_MINT,
+            "outputMint": COIN2_MINT,
+            "amount": amount_int,
+            "slippageBps": 50,
+            "swapMode": "ExactIn",
+        }
+
+        # Request a quote from Jupiter.
+        quote_data = None
+        async with session.get(
+            "https://api.jup.ag/swap/v1/quote", params=quote_params
+        ) as resp:
+            if resp.status != 200:
+                raise Exception(
+                    "Jupiter quote request failed with status %d" % resp.status
+                )
+            quote_data = await resp.json()
+            dbg(quote_data)
+
+        # Request a swap from Jupiter.
+        swap_payload = {
+            "quoteResponse": quote_data,
+            "userPublicKey": BITGET_WALLET_ADDRESS,
+        }
+        swap_result = None
+        async with session.post(
+            "https://api.jup.ag/swap/v1/swap", json=swap_payload
+        ) as swap_resp:
+            if swap_resp.status != 200:
+                raise Exception(
+                    "Jupiter swap request failed with status %d" % swap_resp.status
+                )
+            swap_result = await swap_resp.json()
+            dbg(swap_result)
+
+        # Now, place a sell order on Bybit.
+        order_payload = {
+            "category": "spot",
+            "symbol": COIN1_NAME + COIN2_NAME,
+            "side": "Sell",
+            "orderType": "Limit",
+            "qty": str(amount * 10**COIN2_DECIMAL),
+            "price": str(arbitrage_opportunity.get_bybit().user_sell()),
+        }
+        body = json.dumps(order_payload)
+
+        # Prepare authentication headers.
+        timestamp = str(int(time.time() * 1000))
+        recv_window = "5000"
+
+        signature = generate_signature(
+            BYBIT_API_KEY, BYBIT_API_SECRET, timestamp, recv_window, body
+        )
+        headers = {
+            "Content-Type": "application/json",
+            "X-BAPI-API-KEY": BYBIT_API_KEY,
+            "X-BAPI-TIMESTAMP": timestamp,
+            "X-BAPI-RECV-WINDOW": recv_window,
+            "X-BAPI-SIGN": signature,
+        }
+
+        async with session.post(
+            "https://api.bybit.com/v5/order/create", data=body, headers=headers
+        ) as response:
+            resp_json = await response.json()
+            dbg(resp_json)
+            if resp_json.get("retCode") != 0:
+                raise Exception(
+                    "Bybit API request failed with return code %d"
+                    % resp_json.get("retCode")
+                )
+
+        trade.set_trade_result(TradeResult.Finished)
+    except Exception as e:
+        trade.set_trade_result(TradeResult.Failed)
+        trade.set_actual_profit(0.0)
+        LOGGER.error("Trade %s failed due to %s" % (trade, e))
+    finally:
+        await report_trade_to_telegram(trade)
+        await record_trade_in_json(trade)
+
+
+async def handle_bybit_to_jupiter_trade(
+    trade: Trade, session: aiohttp.ClientSession
+) -> None:
+    """
+    Do the actual trade, we buy from bybit and sell at jupiter.
+    :param trade: The desired trade object, we'll also update trade result in this object.
+    :return: None
+    """
+    pass
+
+
+async def actual_trade(session: aiohttp.ClientSession) -> None:
     """
     Perform the actual trade operation via Jupiter and Bybit API.
     :return: None
@@ -339,6 +566,10 @@ async def actual_trade() -> None:
         try:
             trade: Trade = await trade_queue.get()
             LOGGER.info("Handling arbitrage %s" % trade)
+            if trade.get_trade_type() == TradeType.JUPITER_TO_BYBIT:
+                await handle_jupiter_to_bybit_trade(trade, session)
+            else:
+                await handle_jupiter_to_bybit_trade(trade, session)
         except asyncio.CancelledError:
             break
         except Exception as e:
@@ -382,7 +613,7 @@ async def main() -> None:
     tasks: List[Coroutine] = [
         fetch_price(session),
         price_analysis(),
-        actual_trade(),
+        actual_trade(session),
     ]
 
     try:
