@@ -1,11 +1,10 @@
 import aiohttp
 from aiohttp import ClientTimeout
 import asyncio
-import base58
 import base64
 import colorlog
 
-from crab_dbg import dbg
+# from crab_dbg import dbg
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -13,6 +12,7 @@ import hmac
 import hashlib
 import json
 import signal
+import os
 
 # from solana.rpc.async_api import AsyncClient
 # from solders.hash import Hash
@@ -37,7 +37,7 @@ def load_config(config_file="config.yaml"):
 # Global variables
 # LOGGER setup
 LOGGER = colorlog.getLogger()
-LOGGER.setLevel(colorlog.INFO)
+LOGGER.setLevel(colorlog.DEBUG)
 handler = colorlog.StreamHandler()
 formatter = colorlog.ColoredFormatter(
     "%(log_color)s%(asctime)s - %(levelname)s - %(message)s",
@@ -80,6 +80,9 @@ class MarketPrice:
 
     def user_sell(self) -> float:
         return self._buy
+
+    def get_timestamp(self):
+        return self._timestamp
 
     def __str__(self):
         return "Bid (User Sell): %f, Ask (User Buy): %f at timestamp %s" % (
@@ -150,7 +153,6 @@ class Trade:
         self._expected_profit = expected_profit
 
         self._trade_result = TradeResult.NotProcessed
-        self._actual_profit = 0.0
 
     def get_trade_type(self) -> TradeType:
         return self._trade_type
@@ -164,11 +166,11 @@ class Trade:
     def get_trade_amount(self):
         return self._amount
 
+    def get_expected_profit(self):
+        return self._expected_profit
+
     def set_trade_result(self, trade_result: TradeResult) -> None:
         self._trade_result = trade_result
-
-    def set_actual_profit(self, actual_profit) -> None:
-        self._actual_profit = actual_profit
 
     def __str__(self):
         coin_name = self._arbitrage_opportunity.get_coin_name()
@@ -203,15 +205,17 @@ class Trade:
 
 async def get_jupiter_price(session: aiohttp.ClientSession) -> MarketPrice | None:
     """
-    Retrieve the DEX price from the Jupiter API for SOL to USDC conversion.
+    Retrieve the DEX price from the Jupiter API for COIN1 to COIN2 conversion.
     Returns:
-        A MarketPrice object contains the buy and sell price in USDC per SOL or None on failure.
+        A MarketPrice object contains the buy and sell price in COIN2 per COIN1 or None on failure.
     """
+    COIN1_MINT = CONFIG["COIN1_MINT"]
+    COIN2_MINT = CONFIG["COIN2_MINT"]
     url = "https://api.jup.ag/price/v2"
 
     params = {
-        "ids": "So11111111111111111111111111111111111111112",  # SOL
-        # "vsToken": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",  # USDC
+        "ids": COIN1_MINT,
+        "vsToken": COIN2_MINT,
         "showExtraInfo": "true",
     }
     try:
@@ -238,8 +242,11 @@ async def get_bybit_price(session: aiohttp.ClientSession) -> MarketPrice | None:
     Returns:
         A MarketPrice object contains the buy and sell price in USDC per SOL or None on failure.
     """
+    COIN1_NAME = CONFIG["COIN1_NAME"]
+    COIN2_NAME = CONFIG["COIN2_NAME"]
+
     url = "https://api.bybit.com/v5/market/tickers"
-    params = {"category": "spot", "symbol": "SOLUSDC"}
+    params = {"category": "spot", "symbol": COIN1_NAME + COIN2_NAME}
 
     try:
         async with session.get(url, params=params) as response:
@@ -261,6 +268,8 @@ async def fetch_price(session: aiohttp.ClientSession) -> None:
     Monitor jupiter and bybit, once we get the latest price, send it to price_queue.
     :return: None
     """
+    COIN1_NAME = CONFIG["COIN1_NAME"]
+
     while not shutdown_event.is_set():
         try:
             # Handle two API requests at the same time
@@ -280,7 +289,7 @@ async def fetch_price(session: aiohttp.ClientSession) -> None:
 
             # Add the price to price_queue for further analysis
             await price_queue.put(
-                ArbitrageOpportunity(jupiter_price, bybit_price, "SOL")
+                ArbitrageOpportunity(jupiter_price, bybit_price, COIN1_NAME)
             )
 
         except asyncio.CancelledError:
@@ -356,19 +365,88 @@ async def record_trade_in_json(trade: Trade) -> None:
     assert (
         trade.get_trade_result() != TradeResult.NotProcessed
     ), "Unprocessed trade object shouldn't be added to json record"
-    pass
+    file_path = "trade_records.json"
+
+    records = []
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r") as f:
+                records = json.load(f)
+        except Exception:
+            pass
+
+    # Convert the trade object into a dictionary.
+    # We manually extract fields from the trade and its related objects.
+    jupiter = trade.get_arbitrage_opportunity().get_jupiter()
+    bybit = trade.get_arbitrage_opportunity().get_bybit()
+
+    trade_record = {
+        "amount": trade.get_trade_amount(),
+        "trade_type": trade.get_trade_type().name,  # Enum to string
+        "coin_name": trade.get_arbitrage_opportunity().get_coin_name(),
+        "expected_profit": trade.get_expected_profit(),
+        "trade_result": trade.get_trade_result().name,  # Enum to string
+        "timestamp": datetime.now().isoformat(),
+        "jupiter": {
+            "buy": jupiter.user_buy(),
+            "sell": jupiter.user_sell(),
+            "timestamp": jupiter._timestamp.isoformat(),
+        },
+        "bybit": {
+            "buy": bybit.user_buy(),
+            "sell": bybit.user_sell(),
+            "timestamp": bybit.get_timestamp().isoformat(),
+        },
+    }
+
+    # Append the new trade record to the list.
+    records.append(trade_record)
+
+    # Write the updated list back to the JSON file.
+    with open(file_path, "w") as f:
+        json.dump(records, f, indent=4)
 
 
 async def report_trade_to_telegram(trade: Trade) -> None:
     """
     Report the given trade activity to telegram.
     :param trade: The processed trade object
-    :return:
+    :return: None
     """
+    # Ensure that only processed trades are reported.
     assert (
         trade.get_trade_result() != TradeResult.NotProcessed
     ), "Unprocessed trade object shouldn't be reported to telegram"
-    pass
+
+    # Retrieve Telegram credentials from environment variables.
+    bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+
+    if not bot_token or not chat_id:
+        LOGGER.warning("No telegram bot configured, doing nothing here")
+        return
+
+    # Compose the message to send. We use the trade's string representation.
+    message = f"Trade Report:\n{trade}"
+
+    # Telegram API endpoint for sending messages.
+    telegram_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+
+    # Define the payload parameters.
+    params = {
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "Markdown",
+    }
+
+    # Create an asynchronous HTTP session and send the POST request.
+    async with aiohttp.ClientSession() as session:
+        async with session.post(telegram_url, data=params) as response:
+            if response.status != 200:
+                error_text = await response.text()
+                raise Exception(
+                    f"Failed to send Telegram message: {response.status} - {error_text}"
+                )
 
 
 async def sign_and_send_transaction(
@@ -578,7 +656,104 @@ async def handle_bybit_to_jupiter_trade(
     :param trade: The desired trade object, we'll also update trade result in this object.
     :return: None
     """
-    pass
+    """
+    Do the actual trade, we buy from jupiter and sell at bybit.
+    :param trade: The desired trade object, we'll also update trade result in this object.
+    :return: None
+    """
+    BITGET_WALLET_ADDRESS = CONFIG["BITGET_WALLET_ADDRESS"]
+
+    COIN1_MINT = CONFIG["COIN1_MINT"]
+    COIN1_NAME = CONFIG["COIN1_NAME"]
+    COIN1_DECIMAL = CONFIG["COIN1_DECIMAL"]
+
+    COIN2_MINT = CONFIG["COIN2_MINT"]
+    COIN2_NAME = CONFIG["COIN2_NAME"]
+
+    BYBIT_API_KEY = CONFIG["BYBIT_API_KEY"]
+    BYBIT_API_SECRET = CONFIG["BYBIT_API_SECRET"]
+
+    try:
+        amount = trade.get_trade_amount()
+        arbitrage_opportunity = trade.get_arbitrage_opportunity()
+
+        # Place a buy order on Bybit.
+        order_payload = {
+            "category": "spot",
+            "symbol": COIN1_NAME + COIN2_NAME,
+            "side": "Buy",
+            "orderType": "Limit",
+            "qty": str(amount),
+            "price": str(arbitrage_opportunity.get_bybit().user_buy()),
+        }
+        body = json.dumps(order_payload)
+
+        # Prepare authentication headers.
+        timestamp = str(int(time.time() * 1000))
+        recv_window = "5000"
+
+        signature = generate_signature(
+            BYBIT_API_KEY, BYBIT_API_SECRET, timestamp, recv_window, body
+        )
+        headers = {
+            "Content-Type": "application/json",
+            "X-BAPI-API-KEY": BYBIT_API_KEY,
+            "X-BAPI-TIMESTAMP": timestamp,
+            "X-BAPI-RECV-WINDOW": recv_window,
+            "X-BAPI-SIGN": signature,
+        }
+
+        async with session.post(
+            "https://api.bybit.com/v5/order/create", data=body, headers=headers
+        ) as response:
+            resp_json = await response.json()
+
+        # Now, sell on jupiter
+        amount_int = int(amount * 10**COIN1_DECIMAL)
+        quote_params = {
+            "inputMint": COIN2_MINT,
+            "outputMint": COIN1_MINT,
+            "amount": amount_int,
+            "slippageBps": 50,
+            "swapMode": "ExactIn",
+        }
+
+        # Request a quote from Jupiter.
+        quote_data = None
+        async with session.get(
+            "https://api.jup.ag/swap/v1/quote", params=quote_params
+        ) as resp:
+            quote_data = await resp.json()
+            if resp.status != 200:
+                raise Exception(
+                    "Jupiter quote request failed with status %d" % resp.status
+                )
+
+        # Request a swap from Jupiter.
+        swap_payload = {
+            "quoteResponse": quote_data,
+            "userPublicKey": BITGET_WALLET_ADDRESS,
+        }
+        swap_result = None
+        async with session.post(
+            "https://api.jup.ag/swap/v1/swap", json=swap_payload
+        ) as swap_resp:
+            if swap_resp.status != 200:
+                raise Exception(
+                    "Jupiter swap request failed with status %d" % swap_resp.status
+                )
+            swap_result = await swap_resp.json()
+        # Broadcast this transaction on solana chain
+        await sign_and_send_transaction(swap_result["swapTransaction"], session)
+
+        trade.set_trade_result(TradeResult.Finished)
+    except Exception as e:
+        trade.set_trade_result(TradeResult.Failed)
+        trade.set_actual_profit(0.0)
+        LOGGER.error("Trade %s failed due to %s" % (trade, e))
+    finally:
+        await report_trade_to_telegram(trade)
+        await record_trade_in_json(trade)
 
 
 async def actual_trade(session: aiohttp.ClientSession) -> None:
@@ -593,7 +768,7 @@ async def actual_trade(session: aiohttp.ClientSession) -> None:
             if trade.get_trade_type() == TradeType.JUPITER_TO_BYBIT:
                 await handle_jupiter_to_bybit_trade(trade, session)
             else:
-                await handle_jupiter_to_bybit_trade(trade, session)
+                await handle_bybit_to_jupiter_trade(trade, session)
         except asyncio.CancelledError:
             break
         except Exception as e:

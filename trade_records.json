@@ -1,0 +1,92 @@
+[
+    {
+        "amount": 0.01,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.00035596536000042533,
+        "trade_result": "Finished",
+        "timestamp": "2025-02-12T03:34:05.225147",
+        "jupiter": {
+            "buy": 195.948252,
+            "sell": 196.147464,
+            "timestamp": "2025-02-12T03:34:02.515637"
+        },
+        "bybit": {
+            "buy": 195.72,
+            "sell": 195.66,
+            "timestamp": "2025-02-12T03:34:02.587157"
+        }
+    },
+    {
+        "amount": 0.01,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.0009565653600003543,
+        "trade_result": "Finished",
+        "timestamp": "2025-02-12T03:34:06.545151",
+        "jupiter": {
+            "buy": 195.948252,
+            "sell": 196.147464,
+            "timestamp": "2025-02-12T03:34:03.022826"
+        },
+        "bybit": {
+            "buy": 195.66,
+            "sell": 195.6,
+            "timestamp": "2025-02-12T03:34:04.038156"
+        }
+    },
+    {
+        "amount": 0.01,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.0009565653600003543,
+        "trade_result": "Finished",
+        "timestamp": "2025-02-12T03:34:07.848016",
+        "jupiter": {
+            "buy": 195.948252,
+            "sell": 196.147464,
+            "timestamp": "2025-02-12T03:34:04.478952"
+        },
+        "bybit": {
+            "buy": 195.66,
+            "sell": 195.6,
+            "timestamp": "2025-02-12T03:34:04.889071"
+        }
+    },
+    {
+        "amount": 0.01,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.00020911576000031572,
+        "trade_result": "Finished",
+        "timestamp": "2025-02-12T03:37:23.523029",
+        "jupiter": {
+            "buy": 195.926615,
+            "sell": 195.962424,
+            "timestamp": "2025-02-12T03:37:21.551519"
+        },
+        "bybit": {
+            "buy": 195.55,
+            "sell": 195.51,
+            "timestamp": "2025-02-12T03:37:21.625820"
+        }
+    },
+    {
+        "amount": 0.01,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.00020911576000031572,
+        "trade_result": "Finished",
+        "timestamp": "2025-02-12T03:37:24.782877",
+        "jupiter": {
+            "buy": 195.926615,
+            "sell": 195.962424,
+            "timestamp": "2025-02-12T03:37:22.069792"
+        },
+        "bybit": {
+            "buy": 195.55,
+            "sell": 195.51,
+            "timestamp": "2025-02-12T03:37:22.131452"
+        }
+    }
+]
