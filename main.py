@@ -519,7 +519,7 @@ async def sign_and_send_transaction(
     async with session.post(solana_rpc_url, json=payload) as resp:
         if resp.status != 200:
             raise Exception(f"Solana RPC returned status code {resp.status}")
-        result = await resp.json()
+        _result = await resp.json()
 
 
 # Helper function to generate the signature for Bybit v5 API requests.
@@ -550,7 +550,6 @@ async def handle_jupiter_to_bybit_trade(
 
     COIN2_MINT = CONFIG["COIN2_MINT"]
     COIN2_NAME = CONFIG["COIN2_NAME"]
-    COIN2_DECIMAL = CONFIG["COIN2_DECIMAL"]
 
     BYBIT_API_KEY = CONFIG["BYBIT_API_KEY"]
     BYBIT_API_SECRET = CONFIG["BYBIT_API_SECRET"]
@@ -706,7 +705,7 @@ async def handle_bybit_to_jupiter_trade(
         async with session.post(
             "https://api.bybit.com/v5/order/create", data=body, headers=headers
         ) as response:
-            resp_json = await response.json()
+            _resp_json = await response.json()
 
         # Now, sell on jupiter
         amount_int = int(amount * 10**COIN1_DECIMAL)
