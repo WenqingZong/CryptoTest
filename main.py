@@ -4,8 +4,6 @@ import asyncio
 import base58
 import base64
 import colorlog
-
-from crab_dbg import dbg
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
