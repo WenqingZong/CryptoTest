@@ -15,11 +15,11 @@ import logging
 import json
 import signal
 import os
+from pybit.unified_trading import HTTP
 from solana.rpc.async_api import AsyncClient
 from solders import message
 from solders.transaction import VersionedTransaction
 from solders.keypair import Keypair
-import time
 from typing import Coroutine, List
 from threading import Event
 import yaml
@@ -59,6 +59,7 @@ LOGGER.addHandler(handler)
 # To suppress unwanted logs from dependencies
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("pybit").setLevel(logging.WARNING)
 logging.getLogger("solana.rpc.commitment").setLevel(logging.WARNING)
 
 CONFIG = load_config()
@@ -158,7 +159,8 @@ class Trade:
         self._expected_profit = expected_profit
 
         self._trade_result = TradeResult.NotProcessed
-        self._jupiter_transaction_id = None
+        self._jupiter_transaction_id = ""
+        self._bybit_order_id = ""
 
     def get_trade_type(self) -> TradeType:
         return self._trade_type
@@ -175,8 +177,14 @@ class Trade:
     def get_expected_profit(self):
         return self._expected_profit
 
-    def get_jupiter_transaction_id(self):
+    def get_jupiter_transaction_id(self) -> str:
         return self._jupiter_transaction_id
+
+    def get_bybit_order_id(self) -> str:
+        return self._bybit_order_id
+
+    def set_bybit_order_id(self, id: str):
+        self._bybit_order_id = id
 
     def set_jupiter_transaction_id(self, id: str):
         self._jupiter_transaction_id = id
@@ -410,6 +418,7 @@ async def record_trade_in_json(trade: Trade) -> None:
             "sell": bybit.user_sell(),
             "timestamp": bybit.get_timestamp().isoformat(),
         },
+        "bybit_order_id": trade.get_bybit_order_id(),
     }
 
     # Append the new trade record to the list.
@@ -492,7 +501,7 @@ async def sign_and_send_transaction(swap_tx_base64: str) -> str:
             "Jupiter transaction confirmed with transaction id: %s"
             % send_response.value
         )
-        return send_response.value
+        return str(send_response.value)
 
 
 # Helper function to generate the signature for Bybit v5 API requests.
@@ -564,6 +573,7 @@ async def handle_jupiter_to_bybit_trade(
                     "Jupiter swap request failed with status %d" % swap_resp.status
                 )
             swap_result = await swap_resp.json()
+
         # Broadcast this transaction on solana chain
         jupiter_transaction_id = await sign_and_send_transaction(
             swap_result["swapTransaction"]
@@ -571,47 +581,25 @@ async def handle_jupiter_to_bybit_trade(
         trade.set_jupiter_transaction_id(jupiter_transaction_id)
 
         # Now, place a sell order on Bybit.
-        order_payload = {
-            "category": "spot",
-            "symbol": COIN1_NAME + COIN2_NAME,
-            "side": "Sell",
-            "orderType": "Limit",
-            "qty": str(amount),
-            "price": str(arbitrage_opportunity.get_bybit().user_sell()),
-        }
-        body = json.dumps(order_payload)
-
-        # Prepare authentication headers.
-        timestamp = str(int(time.time() * 1000))
-        recv_window = "5000"
-
-        signature = generate_signature(
-            BYBIT_API_KEY, BYBIT_API_SECRET, timestamp, recv_window, body
+        bybit_session = HTTP(
+            testnet=False, api_key=BYBIT_API_KEY, api_secret=BYBIT_API_SECRET
         )
-        headers = {
-            "Content-Type": "application/json",
-            "X-BAPI-API-KEY": BYBIT_API_KEY,
-            "X-BAPI-TIMESTAMP": timestamp,
-            "X-BAPI-RECV-WINDOW": recv_window,
-            "X-BAPI-SIGN": signature,
-        }
-
-        async with session.post(
-            "https://api.bybit.com/v5/order/create", data=body, headers=headers
-        ) as response:
-            resp_json = await response.json()
-            if resp_json.get("retCode") == 170131 or resp_json.get("retCode") == 170140:
-                # 170131: Insufficient balance, 170140: Order value exceeded lower limit.
-                # We'll ignore it and treat it as success, so the bot is like a simulation.
-                trade.set_trade_result(TradeResult.Finished)
-                await report_trade_to_telegram(trade)
-                await record_trade_in_json(trade)
-                return
-            if resp_json.get("retCode") != 0:
-                raise Exception(
-                    "Bybit API request failed with return code %d"
-                    % resp_json.get("retCode")
-                )
+        bybit_response = bybit_session.place_order(
+            category="spot",
+            symbol=COIN1_NAME + COIN2_NAME,
+            side="Sell",
+            orderType="Limit",
+            qty=str(amount),
+            price=str(arbitrage_opportunity.get_bybit().user_sell()),
+            timeInForce="PostOnly",
+            isLeverage=0,
+            orderFilter="Order",
+        )
+        if bybit_response["retCode"] != 0:
+            raise Exception("Bybit API failed with error %s" % bybit_response["retMsg"])
+        bybit_order_id = bybit_response["result"]["orderId"]
+        trade.set_bybit_order_id(bybit_order_id)
+        LOGGER.info("Bybit transaction confirmed with order id: %s" % bybit_order_id)
 
         trade.set_trade_result(TradeResult.Finished)
     except Exception as e:
@@ -652,35 +640,26 @@ async def handle_bybit_to_jupiter_trade(
         arbitrage_opportunity = trade.get_arbitrage_opportunity()
 
         # Place a buy order on Bybit.
-        order_payload = {
-            "category": "spot",
-            "symbol": COIN1_NAME + COIN2_NAME,
-            "side": "Buy",
-            "orderType": "Limit",
-            "qty": str(amount),
-            "price": str(arbitrage_opportunity.get_bybit().user_buy()),
-        }
-        body = json.dumps(order_payload)
-
-        # Prepare authentication headers.
-        timestamp = str(int(time.time() * 1000))
-        recv_window = "5000"
-
-        signature = generate_signature(
-            BYBIT_API_KEY, BYBIT_API_SECRET, timestamp, recv_window, body
+        bybit_session = HTTP(
+            testnet=False, api_key=BYBIT_API_KEY, api_secret=BYBIT_API_SECRET
         )
-        headers = {
-            "Content-Type": "application/json",
-            "X-BAPI-API-KEY": BYBIT_API_KEY,
-            "X-BAPI-TIMESTAMP": timestamp,
-            "X-BAPI-RECV-WINDOW": recv_window,
-            "X-BAPI-SIGN": signature,
-        }
+        bybit_response = bybit_session.place_order(
+            category="spot",
+            symbol=COIN1_NAME + COIN2_NAME,
+            side="Buy",
+            orderType="Limit",
+            qty=str(amount),
+            price=str(arbitrage_opportunity.get_bybit().user_buy()),
+            timeInForce="PostOnly",
+            isLeverage=0,
+            orderFilter="Order",
+        )
+        if bybit_response["retCode"] != 0:
+            raise Exception("Bybit API failed with error %s" % bybit_response["retMsg"])
+        bybit_order_id = bybit_response["result"]["orderId"]
+        trade.set_bybit_order_id(bybit_order_id)
+        LOGGER.info("Bybit transaction confirmed with order id: %s" % bybit_order_id)
 
-        async with session.post(
-            "https://api.bybit.com/v5/order/create", data=body, headers=headers
-        ) as response:
-            _resp_json = await response.json()
         # Now, sell on jupiter
         amount_int = int(amount * 10**COIN1_DECIMAL)
         quote_params = {

@@ -1,452 +1,602 @@
 [
     {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 6.341100000000211e-05,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T22:49:30.724354",
-        "jupiter": {
-            "buy": 168.123298,
-            "sell": 168.133411,
-            "timestamp": "2025-02-19T22:49:30.150319"
-        },
-        "bybit": {
-            "buy": 168.07,
-            "sell": 168.03,
-            "timestamp": "2025-02-19T22:49:30.251916"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 5.341099999998278e-05,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T22:49:31.108123",
-        "jupiter": {
-            "buy": 168.123298,
-            "sell": 168.133411,
-            "timestamp": "2025-02-19T22:49:30.491551"
-        },
-        "bybit": {
-            "buy": 168.08,
-            "sell": 168.05,
-            "timestamp": "2025-02-19T22:49:30.594903"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 2.548500000000331e-05,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T22:51:28.872161",
-        "jupiter": {
-            "buy": 167.979077,
-            "sell": 168.005485,
-            "timestamp": "2025-02-19T22:51:27.954666"
-        },
-        "bybit": {
-            "buy": 167.98,
-            "sell": 167.93,
-            "timestamp": "2025-02-19T22:51:28.417629"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 2.548500000000331e-05,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T22:51:29.276841",
-        "jupiter": {
-            "buy": 167.979077,
-            "sell": 168.005485,
-            "timestamp": "2025-02-19T22:51:28.669608"
-        },
-        "bybit": {
-            "buy": 167.98,
-            "sell": 167.93,
-            "timestamp": "2025-02-19T22:51:28.769446"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 3.6797000000007075e-05,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T22:54:31.961394",
-        "jupiter": {
-            "buy": 168.520956,
-            "sell": 168.536797,
-            "timestamp": "2025-02-19T22:54:31.486567"
-        },
-        "bybit": {
-            "buy": 168.5,
-            "sell": 168.46,
-            "timestamp": "2025-02-19T22:54:31.555377"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 0.00010840999999999213,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T22:56:18.200801",
-        "jupiter": {
-            "buy": 168.013688,
-            "sell": 167.91841,
-            "timestamp": "2025-02-19T22:56:17.671278"
-        },
-        "bybit": {
-            "buy": 167.81,
-            "sell": 167.77,
-            "timestamp": "2025-02-19T22:56:17.755489"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 0.00013840999999999328,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T22:56:18.530495",
-        "jupiter": {
-            "buy": 168.013688,
-            "sell": 167.91841,
-            "timestamp": "2025-02-19T22:56:17.975108"
-        },
-        "bybit": {
-            "buy": 167.78,
-            "sell": 167.74,
-            "timestamp": "2025-02-19T22:56:18.061347"
-        }
-    },
-    {
-        "amount": 0.001,
+        "amount": 0.05,
         "trade_type": "JUPITER_TO_BYBIT",
         "coin_name": "SOL",
-        "expected_profit": 3.83109999999931e-05,
+        "expected_profit": 0.004745250000000568,
         "trade_result": "Failed",
-        "timestamp": "2025-02-19T22:56:58.463630",
+        "timestamp": "2025-02-20T00:57:21.345428",
         "jupiter": {
-            "buy": 167.991689,
-            "sell": 167.896246,
-            "timestamp": "2025-02-19T22:56:58.205679"
+            "buy": 170.095095,
+            "sell": 170.121959,
+            "timestamp": "2025-02-20T00:57:20.933381"
         },
+        "jupiter_transaction_id": "",
         "bybit": {
-            "buy": 168.07,
-            "sell": 168.03,
-            "timestamp": "2025-02-19T22:56:58.289903"
-        }
+            "buy": 170.27,
+            "sell": 170.19,
+            "timestamp": "2025-02-20T00:57:20.976116"
+        },
+        "bybit_order_id": ""
     },
     {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 0.0002898620000000278,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T22:59:00.573242",
-        "jupiter": {
-            "buy": 167.898035,
-            "sell": 167.929862,
-            "timestamp": "2025-02-19T22:59:00.055468"
-        },
-        "bybit": {
-            "buy": 167.64,
-            "sell": 167.59,
-            "timestamp": "2025-02-19T22:59:00.144245"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 7.137000000000171e-05,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T23:36:04.129347",
-        "jupiter": {
-            "buy": 168.970779,
-            "sell": 169.00137,
-            "timestamp": "2025-02-19T23:36:03.587234"
-        },
-        "bybit": {
-            "buy": 168.93,
-            "sell": 168.88,
-            "timestamp": "2025-02-19T23:36:03.651196"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 5.0515999999987575e-05,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T23:36:39.078695",
-        "jupiter": {
-            "buy": 168.834075,
-            "sell": 168.850516,
-            "timestamp": "2025-02-19T23:36:37.641700"
-        },
-        "bybit": {
-            "buy": 168.8,
-            "sell": 168.76,
-            "timestamp": "2025-02-19T23:36:38.212374"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 5.0515999999987575e-05,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T23:36:39.578875",
-        "jupiter": {
-            "buy": 168.834075,
-            "sell": 168.850516,
-            "timestamp": "2025-02-19T23:36:38.423080"
-        },
-        "bybit": {
-            "buy": 168.8,
-            "sell": 168.75,
-            "timestamp": "2025-02-19T23:36:38.549303"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 3.706400000001509e-05,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T23:38:51.702431",
-        "jupiter": {
-            "buy": 169.191411,
-            "sell": 169.207064,
-            "timestamp": "2025-02-19T23:38:51.254885"
-        },
-        "bybit": {
-            "buy": 169.17,
-            "sell": 169.13,
-            "timestamp": "2025-02-19T23:38:51.334705"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 3.706400000001509e-05,
-        "trade_result": "Failed",
-        "timestamp": "2025-02-19T23:38:52.070841",
-        "jupiter": {
-            "buy": 169.191411,
-            "sell": 169.207064,
-            "timestamp": "2025-02-19T23:38:51.562183"
-        },
-        "bybit": {
-            "buy": 169.17,
-            "sell": 169.13,
-            "timestamp": "2025-02-19T23:38:51.642748"
-        }
-    },
-    {
-        "amount": 0.001,
+        "amount": 0.05,
         "trade_type": "JUPITER_TO_BYBIT",
         "coin_name": "SOL",
-        "expected_profit": 8.296300000000656e-05,
+        "expected_profit": 0.005245250000000113,
         "trade_result": "Failed",
-        "timestamp": "2025-02-19T23:40:01.181220",
+        "timestamp": "2025-02-20T00:57:21.693391",
         "jupiter": {
-            "buy": 169.157037,
-            "sell": 169.185305,
-            "timestamp": "2025-02-19T23:40:00.886373"
+            "buy": 170.095095,
+            "sell": 170.121959,
+            "timestamp": "2025-02-20T00:57:21.240827"
         },
+        "jupiter_transaction_id": "",
         "bybit": {
-            "buy": 169.27,
-            "sell": 169.24,
-            "timestamp": "2025-02-19T23:40:00.967943"
-        }
+            "buy": 170.28,
+            "sell": 170.2,
+            "timestamp": "2025-02-20T00:57:21.278919"
+        },
+        "bybit_order_id": ""
     },
     {
-        "amount": 0.001,
+        "amount": 0.05,
         "trade_type": "BYBIT_TO_JUPITER",
         "coin_name": "SOL",
-        "expected_profit": 3.702000000001249e-05,
+        "expected_profit": 0.011598349999999868,
         "trade_result": "Failed",
-        "timestamp": "2025-02-19T23:41:16.544982",
+        "timestamp": "2025-02-20T00:57:53.031633",
         "jupiter": {
-            "buy": 169.203716,
-            "sell": 169.20702,
-            "timestamp": "2025-02-19T23:41:16.053681"
+            "buy": 170.191038,
+            "sell": 170.201967,
+            "timestamp": "2025-02-20T00:57:51.858977"
         },
+        "jupiter_transaction_id": "",
         "bybit": {
-            "buy": 169.17,
-            "sell": 169.13,
-            "timestamp": "2025-02-19T23:41:16.132132"
-        }
+            "buy": 169.97,
+            "sell": 169.94,
+            "timestamp": "2025-02-20T00:57:51.923768"
+        },
+        "bybit_order_id": ""
     },
     {
-        "amount": 0.001,
+        "amount": 0.05,
         "trade_type": "BYBIT_TO_JUPITER",
         "coin_name": "SOL",
-        "expected_profit": 5.74410000000114e-05,
+        "expected_profit": 0.011598349999999868,
         "trade_result": "Failed",
-        "timestamp": "2025-02-19T23:43:35.459485",
+        "timestamp": "2025-02-20T00:57:53.347646",
         "jupiter": {
-            "buy": 169.857418,
-            "sell": 169.867441,
-            "timestamp": "2025-02-19T23:43:35.050114"
+            "buy": 170.027759,
+            "sell": 170.201967,
+            "timestamp": "2025-02-20T00:57:52.717817"
         },
+        "jupiter_transaction_id": "",
         "bybit": {
-            "buy": 169.81,
-            "sell": 169.76,
-            "timestamp": "2025-02-19T23:43:35.114482"
-        }
+            "buy": 169.97,
+            "sell": 169.94,
+            "timestamp": "2025-02-20T00:57:53.125676"
+        },
+        "bybit_order_id": ""
     },
     {
-        "amount": 0.001,
+        "amount": 0.05,
         "trade_type": "BYBIT_TO_JUPITER",
         "coin_name": "SOL",
-        "expected_profit": 7.886199999998667e-05,
+        "expected_profit": 0.011598349999999868,
         "trade_result": "Failed",
-        "timestamp": "2025-02-19T23:58:45.389412",
+        "timestamp": "2025-02-20T00:57:54.829743",
         "jupiter": {
-            "buy": 168.899973,
-            "sell": 168.878862,
-            "timestamp": "2025-02-19T23:58:44.778321"
+            "buy": 170.027759,
+            "sell": 170.201967,
+            "timestamp": "2025-02-20T00:57:53.497295"
         },
+        "jupiter_transaction_id": "",
         "bybit": {
-            "buy": 168.8,
-            "sell": 168.75,
-            "timestamp": "2025-02-19T23:58:44.822625"
-        }
+            "buy": 169.97,
+            "sell": 169.94,
+            "timestamp": "2025-02-20T00:57:53.555094"
+        },
+        "bybit_order_id": ""
     },
     {
-        "amount": 0.001,
+        "amount": 0.05,
         "trade_type": "BYBIT_TO_JUPITER",
         "coin_name": "SOL",
-        "expected_profit": 8.8862000000006e-05,
+        "expected_profit": 0.011598349999999868,
         "trade_result": "Failed",
-        "timestamp": "2025-02-19T23:58:45.878893",
+        "timestamp": "2025-02-20T00:57:55.994972",
         "jupiter": {
-            "buy": 168.899973,
-            "sell": 168.878862,
-            "timestamp": "2025-02-19T23:58:45.046243"
+            "buy": 170.027759,
+            "sell": 170.201967,
+            "timestamp": "2025-02-20T00:57:55.160000"
         },
+        "jupiter_transaction_id": "",
         "bybit": {
-            "buy": 168.79,
-            "sell": 168.73,
-            "timestamp": "2025-02-19T23:58:45.126036"
-        }
+            "buy": 169.97,
+            "sell": 169.94,
+            "timestamp": "2025-02-20T00:57:55.378466"
+        },
+        "bybit_order_id": ""
     },
     {
-        "amount": 0.001,
+        "amount": 0.05,
         "trade_type": "BYBIT_TO_JUPITER",
         "coin_name": "SOL",
-        "expected_profit": 3.372400000000653e-05,
-        "trade_result": "Finished",
-        "timestamp": "2025-02-20T00:05:05.029845",
-        "jupiter": {
-            "buy": 168.953782,
-            "sell": 168.963724,
-            "timestamp": "2025-02-20T00:05:04.161205"
-        },
-        "bybit": {
-            "buy": 168.93,
-            "sell": 168.88,
-            "timestamp": "2025-02-20T00:05:04.261759"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 4.3724000000025855e-05,
-        "trade_result": "Finished",
-        "timestamp": "2025-02-20T00:05:05.492265",
-        "jupiter": {
-            "buy": 168.953782,
-            "sell": 168.963724,
-            "timestamp": "2025-02-20T00:05:04.475568"
-        },
-        "bybit": {
-            "buy": 168.92,
-            "sell": 168.88,
-            "timestamp": "2025-02-20T00:05:04.562371"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 5.761599999999589e-05,
-        "trade_result": "Finished",
-        "timestamp": "2025-02-20T00:12:38.191087",
-        "jupiter": {
-            "buy": 168.551806,
-            "sell": 168.577616,
-            "timestamp": "2025-02-20T00:12:37.274939"
-        },
-        "bybit": {
-            "buy": 168.52,
-            "sell": 168.47,
-            "timestamp": "2025-02-20T00:12:37.580681"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 6.761600000001522e-05,
-        "trade_result": "Finished",
-        "timestamp": "2025-02-20T00:12:38.671041",
-        "jupiter": {
-            "buy": 168.551806,
-            "sell": 168.577616,
-            "timestamp": "2025-02-20T00:12:37.793997"
-        },
-        "bybit": {
-            "buy": 168.51,
-            "sell": 168.47,
-            "timestamp": "2025-02-20T00:12:38.221672"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "BYBIT_TO_JUPITER",
-        "coin_name": "SOL",
-        "expected_profit": 5.761599999999589e-05,
-        "trade_result": "Finished",
-        "timestamp": "2025-02-20T00:12:39.100239",
-        "jupiter": {
-            "buy": 168.551806,
-            "sell": 168.577616,
-            "timestamp": "2025-02-20T00:12:38.442385"
-        },
-        "bybit": {
-            "buy": 168.52,
-            "sell": 168.47,
-            "timestamp": "2025-02-20T00:12:38.504770"
-        }
-    },
-    {
-        "amount": 0.001,
-        "trade_type": "JUPITER_TO_BYBIT",
-        "coin_name": "SOL",
-        "expected_profit": 3.0534999999986215e-05,
+        "expected_profit": 0.004786649999999781,
         "trade_result": "Failed",
-        "timestamp": "2025-02-20T00:16:04.603311",
+        "timestamp": "2025-02-20T00:59:21.131944",
         "jupiter": {
-            "buy": 168.629465,
-            "sell": 168.655222,
-            "timestamp": "2025-02-20T00:16:03.330874"
+            "buy": 170.194348,
+            "sell": 170.125733,
+            "timestamp": "2025-02-20T00:59:20.594118"
         },
+        "jupiter_transaction_id": "",
         "bybit": {
-            "buy": 168.68,
-            "sell": 168.66,
-            "timestamp": "2025-02-20T00:16:03.741439"
-        }
+            "buy": 170.03,
+            "sell": 169.99,
+            "timestamp": "2025-02-20T00:59:20.657852"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.005786650000000293,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T00:59:22.061695",
+        "jupiter": {
+            "buy": 170.194348,
+            "sell": 170.125733,
+            "timestamp": "2025-02-20T00:59:20.999654"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 170.01,
+            "sell": 169.99,
+            "timestamp": "2025-02-20T00:59:21.075767"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.005286649999999327,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T00:59:22.449543",
+        "jupiter": {
+            "buy": 170.194348,
+            "sell": 170.125733,
+            "timestamp": "2025-02-20T00:59:21.892726"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 170.02,
+            "sell": 170.01,
+            "timestamp": "2025-02-20T00:59:21.969085"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.005286649999999327,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T00:59:22.967696",
+        "jupiter": {
+            "buy": 170.194348,
+            "sell": 170.125733,
+            "timestamp": "2025-02-20T00:59:22.399725"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 170.02,
+            "sell": 170.01,
+            "timestamp": "2025-02-20T00:59:22.469930"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.01457669999999922,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:04:05.293385",
+        "jupiter": {
+            "buy": 170.411107,
+            "sell": 170.411534,
+            "timestamp": "2025-02-20T01:04:04.654796"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 170.12,
+            "sell": 170.05,
+            "timestamp": "2025-02-20T01:04:04.735243"
+        },
+        "bybit_order_id": "1889764176608718080"
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.015076699999998767,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:04:05.825050",
+        "jupiter": {
+            "buy": 170.411107,
+            "sell": 170.411534,
+            "timestamp": "2025-02-20T01:04:05.087987"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 170.11,
+            "sell": 170.06,
+            "timestamp": "2025-02-20T01:04:05.144337"
+        },
+        "bybit_order_id": "1889764181155343616"
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.015076699999998767,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:04:06.617092",
+        "jupiter": {
+            "buy": 170.411107,
+            "sell": 170.411534,
+            "timestamp": "2025-02-20T01:04:05.498590"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 170.11,
+            "sell": 170.06,
+            "timestamp": "2025-02-20T01:04:05.498716"
+        },
+        "bybit_order_id": "1889764188663147776"
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.015076699999998767,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:04:06.844574",
+        "jupiter": {
+            "buy": 170.411107,
+            "sell": 170.411534,
+            "timestamp": "2025-02-20T01:04:05.706931"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 170.11,
+            "sell": 170.06,
+            "timestamp": "2025-02-20T01:04:05.788587"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.01457669999999922,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:04:07.414623",
+        "jupiter": {
+            "buy": 170.411107,
+            "sell": 170.411534,
+            "timestamp": "2025-02-20T01:04:06.572084"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 170.12,
+            "sell": 170.11,
+            "timestamp": "2025-02-20T01:04:06.847219"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.002819750000000454,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:07:55.292489",
+        "jupiter": {
+            "buy": 169.643399,
+            "sell": 169.686395,
+            "timestamp": "2025-02-20T01:07:54.930330"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.63,
+            "sell": 169.56,
+            "timestamp": "2025-02-20T01:07:54.985690"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.002101199999999892,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:07:55.704311",
+        "jupiter": {
+            "buy": 169.643399,
+            "sell": 169.672024,
+            "timestamp": "2025-02-20T01:07:55.440437"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.63,
+            "sell": 169.56,
+            "timestamp": "2025-02-20T01:07:55.480066"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.002101199999999892,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:07:56.117243",
+        "jupiter": {
+            "buy": 169.643399,
+            "sell": 169.672024,
+            "timestamp": "2025-02-20T01:07:55.850392"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.63,
+            "sell": 169.56,
+            "timestamp": "2025-02-20T01:07:55.903455"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.0011011999999993806,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:07:56.567835",
+        "jupiter": {
+            "buy": 169.643399,
+            "sell": 169.672024,
+            "timestamp": "2025-02-20T01:07:56.261148"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.65,
+            "sell": 169.58,
+            "timestamp": "2025-02-20T01:07:56.309702"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.000946499999999162,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:10:59.458287",
+        "jupiter": {
+            "buy": 169.687867,
+            "sell": 169.63893,
+            "timestamp": "2025-02-20T01:10:58.776001"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.62,
+            "sell": 169.59,
+            "timestamp": "2025-02-20T01:10:59.182738"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.000946499999999162,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:11:00.210523",
+        "jupiter": {
+            "buy": 169.687867,
+            "sell": 169.63893,
+            "timestamp": "2025-02-20T01:10:59.570712"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.62,
+            "sell": 169.57,
+            "timestamp": "2025-02-20T01:10:59.997537"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.000946499999999162,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:11:01.055609",
+        "jupiter": {
+            "buy": 169.687867,
+            "sell": 169.63893,
+            "timestamp": "2025-02-20T01:11:00.317098"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.62,
+            "sell": 169.57,
+            "timestamp": "2025-02-20T01:11:00.846309"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.000946499999999162,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:11:01.823120",
+        "jupiter": {
+            "buy": 169.687867,
+            "sell": 169.63893,
+            "timestamp": "2025-02-20T01:11:01.231884"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.62,
+            "sell": 169.57,
+            "timestamp": "2025-02-20T01:11:01.605059"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.000946499999999162,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:11:03.245590",
+        "jupiter": {
+            "buy": 169.687867,
+            "sell": 169.63893,
+            "timestamp": "2025-02-20T01:11:01.942342"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.62,
+            "sell": 169.59,
+            "timestamp": "2025-02-20T01:11:02.017966"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.000946499999999162,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:11:03.991178",
+        "jupiter": {
+            "buy": 169.687867,
+            "sell": 169.63893,
+            "timestamp": "2025-02-20T01:11:03.374160"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.62,
+            "sell": 169.58,
+            "timestamp": "2025-02-20T01:11:03.783339"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.000946499999999162,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:11:04.400096",
+        "jupiter": {
+            "buy": 169.687867,
+            "sell": 169.63893,
+            "timestamp": "2025-02-20T01:11:04.104371"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.62,
+            "sell": 169.58,
+            "timestamp": "2025-02-20T01:11:04.176963"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.000946499999999162,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:11:04.809083",
+        "jupiter": {
+            "buy": 169.687867,
+            "sell": 169.63893,
+            "timestamp": "2025-02-20T01:11:04.513274"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.62,
+            "sell": 169.58,
+            "timestamp": "2025-02-20T01:11:04.601725"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.000946499999999162,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:11:05.600380",
+        "jupiter": {
+            "buy": 169.687867,
+            "sell": 169.63893,
+            "timestamp": "2025-02-20T01:11:04.920983"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.62,
+            "sell": 169.58,
+            "timestamp": "2025-02-20T01:11:05.339001"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.000946499999999162,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:11:06.351315",
+        "jupiter": {
+            "buy": 169.687867,
+            "sell": 169.63893,
+            "timestamp": "2025-02-20T01:11:05.728113"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.62,
+            "sell": 169.58,
+            "timestamp": "2025-02-20T01:11:06.137916"
+        },
+        "bybit_order_id": ""
+    },
+    {
+        "amount": 0.05,
+        "trade_type": "BYBIT_TO_JUPITER",
+        "coin_name": "SOL",
+        "expected_profit": 0.000946499999999162,
+        "trade_result": "Failed",
+        "timestamp": "2025-02-20T01:11:06.754113",
+        "jupiter": {
+            "buy": 169.66308,
+            "sell": 169.63893,
+            "timestamp": "2025-02-20T01:11:06.465347"
+        },
+        "jupiter_transaction_id": "",
+        "bybit": {
+            "buy": 169.62,
+            "sell": 169.58,
+            "timestamp": "2025-02-20T01:11:06.547079"
+        },
+        "bybit_order_id": ""
     }
 ]
