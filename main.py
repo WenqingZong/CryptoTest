@@ -1,22 +1,22 @@
 import aiohttp
 from aiohttp import ClientTimeout
 import asyncio
+import base58
 import base64
 import colorlog
 
-# from crab_dbg import dbg
+from crab_dbg import dbg
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 import hmac
 import hashlib
+import logging
 import json
 import signal
 import os
-
-# from solana.rpc.async_api import AsyncClient
-# from solders.hash import Hash
-from solders.message import to_bytes_versioned
+from solana.rpc.async_api import AsyncClient
+from solders import message
 from solders.transaction import VersionedTransaction
 from solders.keypair import Keypair
 import time
@@ -55,6 +55,11 @@ formatter = colorlog.ColoredFormatter(
 )
 handler.setFormatter(formatter)
 LOGGER.addHandler(handler)
+
+# To suppress unwanted logs from dependencies
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("solana.rpc.commitment").setLevel(logging.WARNING)
 
 CONFIG = load_config()
 price_queue = asyncio.Queue()
@@ -153,6 +158,7 @@ class Trade:
         self._expected_profit = expected_profit
 
         self._trade_result = TradeResult.NotProcessed
+        self._jupiter_transaction_id = None
 
     def get_trade_type(self) -> TradeType:
         return self._trade_type
@@ -168,6 +174,12 @@ class Trade:
 
     def get_expected_profit(self):
         return self._expected_profit
+
+    def get_jupiter_transaction_id(self):
+        return self._jupiter_transaction_id
+
+    def set_jupiter_transaction_id(self, id: str):
+        self._jupiter_transaction_id = id
 
     def set_trade_result(self, trade_result: TradeResult) -> None:
         self._trade_result = trade_result
@@ -392,6 +404,7 @@ async def record_trade_in_json(trade: Trade) -> None:
             "sell": jupiter.user_sell(),
             "timestamp": jupiter._timestamp.isoformat(),
         },
+        "jupiter_transaction_id": trade.get_jupiter_transaction_id(),
         "bybit": {
             "buy": bybit.user_buy(),
             "sell": bybit.user_sell(),
@@ -449,77 +462,37 @@ async def report_trade_to_telegram(trade: Trade) -> None:
                 )
 
 
-async def sign_and_send_transaction(
-    swap_tx_base64: str, session: aiohttp.ClientSession
-) -> None:
+async def sign_and_send_transaction(swap_tx_base64: str) -> str:
     """
     Broadcast the desired transaction on Solana chain.
     :param swap_tx_base64: swapTransaction attribute get from swap API response
-    :return: None
+    :return: Jupiter transaction id
     """
     BITGET_WALLET_PRIVATE_KEY = CONFIG["BITGET_WALLET_PRIVATE_KEY"]
 
-    # 这个写法不对，recent_blockhash不知道需要从哪里那获得。
-    # # Extract and decode the transaction
-    # transaction_bytes = base64.b64decode(swap_tx_base64)
-    # transaction = Transaction.from_bytes(transaction_bytes)
-    #
-    # # Load the wallet's private key
-    # private_key_bytes = base58.b58decode(BITGET_WALLET_PRIVATE_KEY)
-    # keypair = Keypair.from_bytes(private_key_bytes)
-    #
-    # # Sign the transaction with the user's keypair
-    # transaction.sign([keypair], recent_blockhash=Hash.default())
-    #
-    # # Serialize the signed transaction
-    # signed_txn_bytes = bytes(transaction)
-    #
-    # # Send the transaction to Solana
-    # async with AsyncClient("https://api.mainnet-beta.solana.com") as client:
-    #     # Send the raw transaction
-    #     send_response = await client.send_raw_transaction(signed_txn_bytes)
-    #     if send_response.is_error():
-    #         error_msg = send_response.error
-    #         raise Exception(f"Failed to send transaction: {error_msg}")
-    #
-    #     txid = send_response.value
-    #     print(f"Transaction sent with ID: {txid}")
-    #
-    #     # Wait for confirmation
-    #     await client.confirm_transaction(txid, sleep_seconds=30)
-    #     print("Transaction confirmed")
+    # Load the wallet's private key
+    private_key_bytes = base58.b58decode(BITGET_WALLET_PRIVATE_KEY)
+    keypair = Keypair.from_bytes(private_key_bytes)
 
-    # Get our wallet keypair from the config (private key should be base58-encoded)\
-    keypair = Keypair.from_base58_string(BITGET_WALLET_PRIVATE_KEY.strip())
-    if not swap_tx_base64:
-        raise ValueError("No 'swap_transaction' field found in swap response")
+    # Sign the transaction with private key
+    raw_transaction = VersionedTransaction.from_bytes(base64.b64decode(swap_tx_base64))
+    signature = keypair.sign_message(
+        message.to_bytes_versioned(raw_transaction.message)
+    )
+    signed_txn = VersionedTransaction.populate(raw_transaction.message, [signature])
 
-    # Convert base64 string into bytes and create a VersionedTransaction
-    raw_tx = VersionedTransaction.from_bytes(base64.b64decode(swap_tx_base64))
-    # Sign the transaction:
-    # solders provides a helper to convert the message to bytes in its versioned format.
-    signature = keypair.sign_message(to_bytes_versioned(raw_tx.message))
+    # Serialize the signed transaction
+    signed_txn_bytes = bytes(signed_txn)
 
-    # Create a signed transaction by populating the raw message with our signature
-    signed_tx = VersionedTransaction.populate(raw_tx.message, [signature])
-    # Serialize the signed transaction to bytes and then encode in base64 (RPC expects a base64 string)
-    encoded_tx = base64.b64encode(bytes(signed_tx)).decode("utf-8")
-
-    # Prepare a JSON-RPC payload to send the transaction
-    solana_rpc_url = "https://api.mainnet-beta.solana.com"
-    payload = {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "sendTransaction",
-        "params": [
-            encoded_tx,
-        ],
-    }
-    # Use aiohttp to send the transaction
-    async with session.post(solana_rpc_url, json=payload) as resp:
-        if resp.status != 200:
-            raise Exception(f"Solana RPC returned status code {resp.status}")
-        _result = await resp.json()
+    # Send the transaction to Solana
+    async with AsyncClient("https://api.mainnet-beta.solana.com") as client:
+        # Send the raw transaction
+        send_response = await client.send_raw_transaction(signed_txn_bytes)
+        LOGGER.info(
+            "Jupiter transaction confirmed with transaction id: %s"
+            % send_response.value
+        )
+        return send_response.value
 
 
 # Helper function to generate the signature for Bybit v5 API requests.
@@ -592,7 +565,10 @@ async def handle_jupiter_to_bybit_trade(
                 )
             swap_result = await swap_resp.json()
         # Broadcast this transaction on solana chain
-        await sign_and_send_transaction(swap_result["swapTransaction"], session)
+        jupiter_transaction_id = await sign_and_send_transaction(
+            swap_result["swapTransaction"]
+        )
+        trade.set_jupiter_transaction_id(jupiter_transaction_id)
 
         # Now, place a sell order on Bybit.
         order_payload = {
@@ -640,7 +616,6 @@ async def handle_jupiter_to_bybit_trade(
         trade.set_trade_result(TradeResult.Finished)
     except Exception as e:
         trade.set_trade_result(TradeResult.Failed)
-        trade.set_actual_profit(0.0)
         LOGGER.error("Trade %s failed due to %s" % (trade, e))
     finally:
         await report_trade_to_telegram(trade)
@@ -706,7 +681,6 @@ async def handle_bybit_to_jupiter_trade(
             "https://api.bybit.com/v5/order/create", data=body, headers=headers
         ) as response:
             _resp_json = await response.json()
-
         # Now, sell on jupiter
         amount_int = int(amount * 10**COIN1_DECIMAL)
         quote_params = {
@@ -743,12 +717,14 @@ async def handle_bybit_to_jupiter_trade(
                 )
             swap_result = await swap_resp.json()
         # Broadcast this transaction on solana chain
-        await sign_and_send_transaction(swap_result["swapTransaction"], session)
+        jupiter_transaction_id = await sign_and_send_transaction(
+            swap_result["swapTransaction"]
+        )
+        trade.set_jupiter_transaction_id(jupiter_transaction_id)
 
         trade.set_trade_result(TradeResult.Finished)
     except Exception as e:
         trade.set_trade_result(TradeResult.Failed)
-        trade.set_actual_profit(0.0)
         LOGGER.error("Trade %s failed due to %s" % (trade, e))
     finally:
         await report_trade_to_telegram(trade)
