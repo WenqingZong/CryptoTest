@@ -1,5 +1,4 @@
-# CryptoTest
-Crypto take home test
+# Crypto Arbitrage Bot
 
 ## Env Setup
 本项目使用uv来管理python环境。本项目默认系统环境为MacOS/Linux。
@@ -26,6 +25,3 @@ Crypto take home test
 
 ## 项目配置
 本项目支持任意交易对的套利操作，只需正确填写`config.yaml`。
-
-## 项目不足
-尽管翻阅了大量的API文档，但十分遗憾在Jupiter链上的操作始终无法完成，具体表现为bot获取到quote和swap信息之后，无法对交易进行签名，进而导致交易无法在solana链上广播出去，不被他人认可。迫于无奈，最终选择了只进行交易模拟而不发生真实的交易数据。
